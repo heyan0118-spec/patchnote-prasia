@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>프라시아 전기 — 패치노트 검색 (데모)</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #242836;
+    --border: #2e3345;
+    --text: #e1e4ed;
+    --text-dim: #8b90a0;
+    --accent: #6c8aff;
+    --accent-dim: #4a62c4;
+    --green: #4ade80;
+    --orange: #fb923c;
+    --red: #f87171;
+    --tag-bg: #2a2d3e;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+  .container { max-width: 900px; margin: 0 auto; padding: 2rem 1.5rem; }
+
+  header { text-align: center; margin-bottom: 2.5rem; }
+  header h1 { font-size: 1.6rem; font-weight: 700; margin-bottom: 0.3rem; }
+  header h1 span { color: var(--accent); }
+  header p { color: var(--text-dim); font-size: 0.9rem; }
+  .demo-badge {
+    display: inline-block;
+    background: var(--accent);
+    color: #fff;
+    font-size: 0.7rem;
+    padding: 0.15rem 0.5rem;
+    border-radius: 4px;
+    margin-left: 0.5rem;
+    vertical-align: middle;
+  }
+
+  .search-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+  }
+  .search-row { display: flex; gap: 0.75rem; }
+  .search-row input[type="text"] {
+    flex: 1;
+    background: var(--surface2);
+    border: 1px solid var(--accent);
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+    color: var(--text);
+    outline: none;
+  }
+  .btn-search {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .filters {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 0.75rem;
+    flex-wrap: wrap;
+  }
+  .filters select, .filters input[type="date"] {
+    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.85rem;
+    color: var(--text);
+  }
+  .filters label {
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .status-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.6rem 0;
+    font-size: 0.85rem;
+    color: var(--text-dim);
+  }
+  .policy-badge {
+    font-size: 0.75rem;
+    padding: 0.2rem 0.6rem;
+    border-radius: 4px;
+    font-weight: 600;
+  }
+  .policy-history { background: #3b2f1e; color: var(--orange); }
+  .policy-latest { background: #1e3a5f; color: #60a5fa; }
+
+  .answer-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1.5rem;
+    font-size: 0.95rem;
+    line-height: 1.5;
+  }
+
+  /* View toggle */
+  .view-toggle {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+  }
+  .view-toggle button {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.4rem 0.75rem;
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .view-toggle button.active {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(108,138,255,0.1);
+  }
+
+  /* Timeline table */
+  .timeline-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    font-size: 0.85rem;
+  }
+  .timeline-table thead th {
+    background: var(--surface2);
+    color: var(--text-dim);
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    padding: 0.7rem 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  .timeline-table tbody tr { transition: background 0.15s; }
+  .timeline-table tbody tr:hover { background: var(--surface2); }
+  .timeline-table tbody tr:not(:last-child) td { border-bottom: 1px solid var(--border); }
+  .timeline-table td {
+    padding: 0.65rem 0.75rem;
+    vertical-align: middle;
+  }
+  .timeline-table td a { color: var(--text); text-decoration: none; }
+  .timeline-table td a:hover { color: var(--accent); }
+  .tl-period { white-space: nowrap; color: #93c5fd; font-variant-numeric: tabular-nums; }
+  .tl-duration { font-size: 0.75rem; color: var(--text-dim); white-space: nowrap; }
+  .tl-scope { color: var(--text); }
+  .tl-score {
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.1rem 0.4rem;
+    border-radius: 4px;
+    white-space: nowrap;
+  }
+  .score-high { background: #1a3a2a; color: var(--green); }
+  .score-mid  { background: #3b2f1e; color: var(--orange); }
+  .score-low  { background: #3a1a1a; color: var(--red); }
+
+  /* Cards */
+  .evidence-list { display: flex; flex-direction: column; gap: 0.75rem; }
+  .evidence-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1rem 1.25rem;
+    transition: border-color 0.2s;
+  }
+  .evidence-card:hover { border-color: var(--accent); }
+  .evidence-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+  }
+  .evidence-title { font-weight: 600; font-size: 0.95rem; color: var(--text); }
+  .evidence-title a { color: inherit; text-decoration: none; }
+  .evidence-title a:hover { color: var(--accent); }
+  .evidence-score {
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.15rem 0.5rem;
+    border-radius: 4px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .evidence-meta { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.6rem; }
+  .tag {
+    font-size: 0.75rem;
+    padding: 0.15rem 0.5rem;
+    border-radius: 4px;
+    background: var(--tag-bg);
+    color: var(--text-dim);
+  }
+  .tag-date { color: #93c5fd; }
+  .tag-type { color: #c4b5fd; }
+  .tag-event { color: var(--orange); }
+  .tag-source { color: var(--green); }
+  .evidence-text {
+    font-size: 0.85rem;
+    line-height: 1.6;
+    color: var(--text-dim);
+    max-height: 120px;
+    overflow: hidden;
+    position: relative;
+    cursor: pointer;
+  }
+  .evidence-text.expanded { max-height: none; }
+  .evidence-text::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 40px;
+    background: linear-gradient(transparent, var(--surface));
+    pointer-events: none;
+  }
+  .evidence-text.expanded::after { display: none; }
+  .event-details {
+    margin-top: 0.5rem;
+    padding: 0.6rem 0.75rem;
+    background: var(--surface2);
+    border-radius: 6px;
+    font-size: 0.8rem;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.2rem 0.75rem;
+  }
+  .event-details dt { color: var(--text-dim); }
+  .event-details dd { color: var(--text); }
+
+  footer {
+    text-align: center;
+    padding-top: 2rem;
+    font-size: 0.75rem;
+    color: var(--text-dim);
+  }
+
+  @media (max-width: 600px) {
+    .search-row { flex-direction: column; }
+    .filters { flex-direction: column; }
+    .evidence-header { flex-direction: column; }
+    .timeline-table { font-size: 0.78rem; }
+    .timeline-table th:nth-child(4),
+    .timeline-table td:nth-child(4) { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1><span>프라시아 전기</span> 패치노트 검색 <span class="demo-badge">DEMO</span></h1>
+    <p>공지 및 업데이트 내역을 자연어로 검색하세요</p>
+  </header>
+
+  <!-- Search Box -->
+  <div class="search-box">
+    <div class="search-row">
+      <input type="text" value="2025년 클래스 체인지 진행 기간 정리해줘" readonly />
+      <button class="btn-search">검색</button>
+    </div>
+    <div class="filters">
+      <label>주제
+        <select><option value="">전체</option><option value="class" selected>클래스</option></select>
+      </label>
+      <label>시작일 <input type="date" value="2025-01-01" /></label>
+      <label>종료일 <input type="date" /></label>
+    </div>
+  </div>
+
+  <!-- Status -->
+  <div class="status-bar">
+    <span>5건의 결과</span>
+    <span class="policy-badge policy-history">이력 보존</span>
+  </div>
+
+  <!-- Answer -->
+  <div class="answer-box">
+    관련 이력 5건을 날짜순으로 정리했습니다.
+  </div>
+
+  <!-- View Toggle -->
+  <div class="view-toggle">
+    <button class="active" id="btnTimeline">타임라인</button>
+    <button id="btnCards">상세 카드</button>
+  </div>
+
+  <!-- Timeline Table View -->
+  <div id="viewTimeline">
+    <table class="timeline-table">
+      <thead>
+        <tr>
+          <th>기간</th>
+          <th>일수</th>
+          <th>내용</th>
+          <th>대상</th>
+          <th>관련도</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="tl-period">2025-01-15 ~ 2025-01-29</td>
+          <td class="tl-duration">14일</td>
+          <td><a href="#">클래스 체인지 이벤트 (1월)</a></td>
+          <td class="tl-scope">전 서버 Lv.50 이상</td>
+          <td><span class="tl-score score-high">92%</span></td>
+        </tr>
+        <tr>
+          <td class="tl-period">2025-03-19 ~ 2025-04-02</td>
+          <td class="tl-duration">14일</td>
+          <td><a href="#">클래스 체인지 이벤트 (3월)</a></td>
+          <td class="tl-scope">전 서버 Lv.50 이상</td>
+          <td><span class="tl-score score-high">87%</span></td>
+        </tr>
+        <tr>
+          <td class="tl-period">2025-05-21 ~ 2025-06-04</td>
+          <td class="tl-duration">14일</td>
+          <td><a href="#">클래스 체인지 이벤트 (5월)</a></td>
+          <td class="tl-scope">전 서버 Lv.50 이상</td>
+          <td><span class="tl-score score-mid">68%</span></td>
+        </tr>
+        <tr>
+          <td class="tl-period">2025-07-16 ~ 2025-07-30</td>
+          <td class="tl-duration">14일</td>
+          <td><a href="#">클래스 체인지 (7월 시즌)</a></td>
+          <td class="tl-scope">-</td>
+          <td><span class="tl-score score-mid">55%</span></td>
+        </tr>
+        <tr>
+          <td class="tl-period">2025-09-17 ~ 2025-10-01</td>
+          <td class="tl-duration">14일</td>
+          <td><a href="#">클래스 체인지 (9월 시즌)</a></td>
+          <td class="tl-scope">-</td>
+          <td><span class="tl-score score-low">38%</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Card View (hidden by default) -->
+  <div id="viewCards" class="evidence-list" style="display:none">
+    <div class="evidence-card">
+      <div class="evidence-header">
+        <div class="evidence-title"><a href="#">2025년 1월 15일 업데이트 안내</a></div>
+        <span class="evidence-score score-high">92%</span>
+      </div>
+      <div class="evidence-meta">
+        <span class="tag tag-date">2025-01-15</span>
+        <span class="tag tag-type">class</span>
+        <span class="tag tag-event">class_change</span>
+        <span class="tag tag-source">event_record</span>
+      </div>
+      <div class="evidence-text" onclick="this.classList.toggle('expanded')">
+        [클래스 체인지] 1월 15일(수) 정기점검 이후 ~ 1월 29일(수) 정기점검 전까지 클래스 체인지 이벤트가 진행됩니다. 기간 내 1회 무료로 클래스를 변경할 수 있으며, 변경 시 해당 클래스의 기본 장비 세트가 지급됩니다. 대상: 전 서버 Lv.50 이상 캐릭터
+      </div>
+      <dl class="event-details">
+        <dt>이벤트</dt><dd>클래스 체인지 이벤트 (1월)</dd>
+        <dt>시작</dt><dd>2025-01-15</dd>
+        <dt>종료</dt><dd>2025-01-29</dd>
+        <dt>대상</dt><dd>전 서버 Lv.50 이상</dd>
+      </dl>
+    </div>
+
+    <div class="evidence-card">
+      <div class="evidence-header">
+        <div class="evidence-title"><a href="#">2025년 3월 19일 업데이트 안내</a></div>
+        <span class="evidence-score score-high">87%</span>
+      </div>
+      <div class="evidence-meta">
+        <span class="tag tag-date">2025-03-19</span>
+        <span class="tag tag-type">class</span>
+        <span class="tag tag-event">class_change</span>
+        <span class="tag tag-source">event_record</span>
+      </div>
+      <div class="evidence-text" onclick="this.classList.toggle('expanded')">
+        [클래스 체인지] 3월 19일(수) 정기점검 이후 ~ 4월 2일(수) 정기점검 전까지 클래스 체인지가 진행됩니다. 이번 시즌에는 신규 클래스 '아처' 전직 경로가 추가되었습니다.
+      </div>
+      <dl class="event-details">
+        <dt>이벤트</dt><dd>클래스 체인지 이벤트 (3월)</dd>
+        <dt>시작</dt><dd>2025-03-19</dd>
+        <dt>종료</dt><dd>2025-04-02</dd>
+        <dt>대상</dt><dd>전 서버 Lv.50 이상</dd>
+      </dl>
+    </div>
+
+    <div class="evidence-card">
+      <div class="evidence-header">
+        <div class="evidence-title"><a href="#">2025년 5월 21일 업데이트 안내</a></div>
+        <span class="evidence-score score-mid">68%</span>
+      </div>
+      <div class="evidence-meta">
+        <span class="tag tag-date">2025-05-21</span>
+        <span class="tag tag-type">class</span>
+        <span class="tag tag-event">class_change</span>
+        <span class="tag tag-source">event_record</span>
+      </div>
+      <div class="evidence-text" onclick="this.classList.toggle('expanded')">
+        [클래스 체인지] 5월 시즌 클래스 체인지가 진행됩니다. 5월 21일(수) 점검 후 ~ 6월 4일(수) 점검 전까지 이용 가능합니다.
+      </div>
+      <dl class="event-details">
+        <dt>이벤트</dt><dd>클래스 체인지 이벤트 (5월)</dd>
+        <dt>시작</dt><dd>2025-05-21</dd>
+        <dt>종료</dt><dd>2025-06-04</dd>
+        <dt>대상</dt><dd>전 서버 Lv.50 이상</dd>
+      </dl>
+    </div>
+
+    <div class="evidence-card">
+      <div class="evidence-header">
+        <div class="evidence-title"><a href="#">2025년 7월 16일 업데이트 안내</a></div>
+        <span class="evidence-score score-mid">55%</span>
+      </div>
+      <div class="evidence-meta">
+        <span class="tag tag-date">2025-07-16</span>
+        <span class="tag tag-type">class</span>
+        <span class="tag tag-event">class_change</span>
+        <span class="tag tag-source">chunk</span>
+      </div>
+      <div class="evidence-text" onclick="this.classList.toggle('expanded')">
+        7월 시즌 업데이트와 함께 클래스 체인지 기간이 안내됩니다. 7월 16일(수) ~ 7월 30일(수) 점검 전까지 진행됩니다.
+      </div>
+    </div>
+
+    <div class="evidence-card">
+      <div class="evidence-header">
+        <div class="evidence-title"><a href="#">2025년 9월 17일 업데이트 안내</a></div>
+        <span class="evidence-score score-low">38%</span>
+      </div>
+      <div class="evidence-meta">
+        <span class="tag tag-date">2025-09-17</span>
+        <span class="tag tag-type">class</span>
+        <span class="tag tag-source">chunk</span>
+      </div>
+      <div class="evidence-text" onclick="this.classList.toggle('expanded')">
+        9월 대규모 업데이트 안내사항 중 클래스 체인지 관련 내용이 포함되어 있습니다. 9월 17일부터 10월 1일까지 진행 예정입니다.
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    프라시아 전기 패치노트 검색 &middot; 데이터 출처: 넥슨 공식 커뮤니티
+  </footer>
+</div>
+
+<script>
+const btnTimeline = document.getElementById('btnTimeline');
+const btnCards = document.getElementById('btnCards');
+const viewTimeline = document.getElementById('viewTimeline');
+const viewCards = document.getElementById('viewCards');
+
+btnTimeline.addEventListener('click', () => {
+  btnTimeline.classList.add('active');
+  btnCards.classList.remove('active');
+  viewTimeline.style.display = '';
+  viewCards.style.display = 'none';
+});
+btnCards.addEventListener('click', () => {
+  btnCards.classList.add('active');
+  btnTimeline.classList.remove('active');
+  viewCards.style.display = '';
+  viewTimeline.style.display = 'none';
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,13 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.venv/
+.env
+.codex-reviews/
+data/*.db
+data/*.db-*
+tmp_review_dense/
+tmp_review_dense2/
+
+data/*.bak*
